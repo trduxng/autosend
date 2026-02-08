@@ -1,6 +1,7 @@
 import time
 import os
-import pyperclip  # Thư viện quản lý Clipboard (Copy/Paste)
+import pyperclip
+from datetime import datetime  # Thư viện xử lý thời gian
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -11,124 +12,123 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 
-# ================= CẤU HÌNH NGƯỜI DÙNG =================
-# Tên người nhận (Phải chính xác như trong danh bạ Zalo)
-# --- CẤU HÌNH ---
-TEN_NGUOI_NHAN = "My Documents" 
-# Nội dung tin nhắn muốn gửi
-NOI_DUNG_TIN = "Đây là tin nhắn tự động từ Debian (Final Version)"# Kiểm tra lại đường dẫn profile của bạn
+# ================= CẤU HÌNH HẸN GIỜ =================
+# Định dạng 24h (Giờ:Phút). Ví dụ: "07:30", "14:05", "22:00"
+# Nếu muốn gửi NGAY LẬP TỨC, hãy để trống: THOI_GIAN_GUI = ""
+THOI_GIAN_GUI = "23:43" 
+
+# Thông tin người nhận & Nội dung
+TEN_NGUOI_NHAN = "My Documents"
+NOI_DUNG_TIN = "Tin nhắn này được hẹn giờ gửi tự động trên Debian!"
+
+# Đường dẫn Profile Firefox (Copy từ bài trước của bạn)
 PROFILE_PATH = "/home/trduxng/.mozilla/firefox/ji9q0gsu.default"
+# ====================================================
 
-
-def gui_tin_zalo_bat_tu():
-    print("🐧 Đang khởi động Tool trên Debian...")
-    print(f"📂 Profile đang dùng: {PROFILE_PATH}")
-
-    # 1. Kiểm tra đường dẫn Profile
+def gui_tin_zalo():
+    print(f"\n🚀 ĐANG THỰC HIỆN GỬI TIN LÚC {datetime.now().strftime('%H:%M:%S')}...")
+    
     if not os.path.exists(PROFILE_PATH):
         print(f"❌ LỖI: Không tìm thấy thư mục Profile!")
-        print("👉 Hãy kiểm tra lại đường dẫn trong 'about:profiles'")
         return
 
-    # 2. Cấu hình Firefox
     options = Options()
     options.add_argument("-profile")
     options.add_argument(PROFILE_PATH)
     
-    # Khởi tạo Driver
+    # Chạy ngầm (Headless) nếu muốn không hiện cửa sổ lên:
+    # options.add_argument("--headless") 
+
     driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
-    
-    # Khởi tạo các công cụ hỗ trợ
-    wait = WebDriverWait(driver, 40) # Chờ tối đa 40s
-    actions = ActionChains(driver)   # Bàn phím ảo
+    wait = WebDriverWait(driver, 40)
+    actions = ActionChains(driver)
 
     try:
-        # 3. Mở Zalo Web
         driver.get("https://chat.zalo.me/")
-        print("⏳ Đang đợi Zalo Web tải (15s)...")
-        time.sleep(15) # Thời gian chờ cứng để Zalo load xong script
+        print("⏳ Đang tải Zalo Web (15s)...")
+        time.sleep(15) 
 
-        # ---------------------------------------------------------
-        # BƯỚC 4: TÌM KIẾM NGƯỜI DÙNG (Kỹ thuật Anti-Stale)
-        # ---------------------------------------------------------
+        # --- BƯỚC 1: TÌM NGƯỜI ---
         print("🔍 Đang tìm ô Search...")
-        
         try:
-            # Tìm ô search bằng ID hoặc Placeholder
             search_box = wait.until(EC.element_to_be_clickable((By.ID, "contact-search-input")))
         except:
             search_box = wait.until(EC.element_to_be_clickable((By.XPATH, "//input[@placeholder='Tìm kiếm']")))
 
-        # Click vào ô search để lấy Focus
         search_box.click()
         
-        # Xóa nội dung cũ (nếu có) bằng Ctrl+A -> Delete
+        # Xóa text cũ
         actions.key_down(Keys.CONTROL).send_keys('a').key_up(Keys.CONTROL).send_keys(Keys.DELETE).perform()
         time.sleep(0.5)
 
-        # Nhập tên người nhận (Dùng Paste để tránh lỗi bộ gõ tiếng Việt)
+        # Nhập tên
         print(f"⌨️ Nhập tên: {TEN_NGUOI_NHAN}")
         pyperclip.copy(TEN_NGUOI_NHAN)
-        
-        # Paste tên vào
         actions.key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
         
-        # --- QUAN TRỌNG NHẤT ---
-        # Sau khi paste, Zalo sẽ load lại danh sách gợi ý.
-        # Ta KHÔNG click vào kết quả, mà dùng bàn phím để chọn.
         print("⏳ Chờ gợi ý hiện ra (3s)...")
         time.sleep(3) 
         
-        print("⬇️ Dùng phím Mũi Tên để chọn người đầu tiên...")
-        # Nhấn Mũi Tên Xuống (Chọn người đầu tiên) -> Nhấn Enter (Vào chat)
+        print("⬇️ Chọn người đầu tiên...")
         actions.send_keys(Keys.ARROW_DOWN).pause(0.5).send_keys(Keys.ENTER).perform()
         
         print("✅ Đã vào khung chat. Đang chờ load...")
-        time.sleep(3) # Chờ khung chat load xong
+        time.sleep(3)
 
-        # ---------------------------------------------------------
-        # BƯỚC 5: NHẬP VÀ GỬI TIN NHẮN
-        # ---------------------------------------------------------
+        # --- BƯỚC 2: GỬI TIN ---
         print("✍️ Đang tìm ô nhập tin nhắn...")
-        
         try:
-            # Tìm ô nhập liệu (thường là thẻ div rich-input)
             chat_box = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.rich-input")))
         except:
-            # Dự phòng
             chat_box = driver.find_element(By.ID, "richInput")
 
-        # Click để lấy focus vào ô chat
         chat_box.click()
-        time.sleep(0.5)
+        time.sleep(1)
 
-        # Copy nội dung tin nhắn vào Clipboard
-        pyperclip.copy(NOI_DUNG_TIN)
-        
-        # Paste nội dung (Ctrl + V)
+        # Copy & Paste nội dung
+        pyperclip.copy(NOI_DUNG_TIN) 
         actions.key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
-        
-        # Chờ 1 chút để Zalo nhận diện văn bản
         time.sleep(1)
         
-        # Nhấn Enter để gửi (Dùng ActionChains thay vì element.send_keys)
         print("🚀 Đang nhấn Enter để gửi...")
         actions.send_keys(Keys.ENTER).perform()
         
-        print(f"🎉 GỬI THÀNH CÔNG CHO: {TEN_NGUOI_NHAN}")
-        print(f"Nội dung: {NOI_DUNG_TIN}")
+        print(f"🎉 ĐÃ GỬI THÀNH CÔNG VÀO LÚC {datetime.now().strftime('%H:%M:%S')}!")
 
     except Exception as e:
         print(f"❌ CÓ LỖI XẢY RA: {e}")
-        # Chụp màn hình lỗi để debug
-        driver.save_screenshot("error_cuoi_cung.png")
-        print("📸 Đã lưu ảnh lỗi tại: error_cuoi_cung.png")
-        
+        driver.save_screenshot("error_timer.png")
     finally:
-        print("🏁 Hoàn tất. Đóng trình duyệt sau 5s.")
+        print("🏁 Đóng trình duyệt sau 5s.")
         time.sleep(5)
         driver.quit()
 
-# Chạy chương trình
+def che_do_cho():
+    """Hàm kiểm tra thời gian liên tục"""
+    if THOI_GIAN_GUI == "":
+        print("⚡ Chế độ gửi ngay lập tức!")
+        gui_tin_zalo()
+        return
+
+    print(f"⏰ Đang chạy chế độ Hẹn Giờ.")
+    print(f"👉 Tool sẽ đợi đến: {THOI_GIAN_GUI}")
+    print(f"👉 Thời gian hiện tại: {datetime.now().strftime('%H:%M:%S')}")
+    print("------------------------------------------------")
+
+    while True:
+        # Lấy giờ phút hiện tại (ví dụ: "09:20")
+        now = datetime.now().strftime("%H:%M")
+        
+        if now == THOI_GIAN_GUI:
+            print("\n🔔 ĐING BOONG! ĐÃ ĐẾN GIỜ GỬI TIN!")
+            gui_tin_zalo()
+            break # Thoát vòng lặp sau khi gửi xong
+        
+        # Chờ 20 giây rồi kiểm tra lại (để đỡ tốn CPU)
+        time.sleep(20)
+
 if __name__ == "__main__":
-    gui_tin_zalo_bat_tu()
+    try:
+        che_do_cho()
+    except KeyboardInterrupt:
+        print("\n🛑 Đã dừng chương trình.")
