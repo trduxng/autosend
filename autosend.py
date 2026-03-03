@@ -15,14 +15,17 @@ from selenium.webdriver.common.action_chains import ActionChains
 # ================= CẤU HÌNH HẸN GIỜ =================
 # Định dạng 24h (Giờ:Phút). Ví dụ: "07:30", "14:05", "22:00"
 # Nếu muốn gửi NGAY LẬP TỨC, hãy để trống: THOI_GIAN_GUI = ""
-THOI_GIAN_GUI = "23:43" 
+THOI_GIAN_GUI = "05:50" 
+# THOI_GIAN_GUI = "" 
 
 # Thông tin người nhận & Nội dung
-TEN_NGUOI_NHAN = "My Documents"
-NOI_DUNG_TIN = "Tin nhắn này được hẹn giờ gửi tự động trên Debian!"
+# TEN_NGUOI_NHAN = "My Documents"
+TEN_NGUOI_NHAN = "Báo Thức Đầu Năm"
+
+NOI_DUNG_TIN = "toi an toan"
 
 # Đường dẫn Profile Firefox (Copy từ bài trước của bạn)
-PROFILE_PATH = "/home/trduxng/.mozilla/firefox/ji9q0gsu.default"
+PROFILE_PATH = "/home/trduxng/snap/firefox/common/.mozilla/firefox/740e7bqe.default"
 # ====================================================
 
 def gui_tin_zalo():
@@ -94,6 +97,8 @@ def gui_tin_zalo():
         actions.send_keys(Keys.ENTER).perform()
         
         print(f"🎉 ĐÃ GỬI THÀNH CÔNG VÀO LÚC {datetime.now().strftime('%H:%M:%S')}!")
+        time.sleep(5)
+
 
     except Exception as e:
         print(f"❌ CÓ LỖI XẢY RA: {e}")
